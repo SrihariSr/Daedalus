@@ -76,7 +76,7 @@ class Centreline:
         `n` is how far to the side from the centreline the car is.
         """
 
-        # -------- Finding closest point --------
+        # Finding closest point
 
         # Ensuring further computation is done on arrays, not single numbers
         xq = np.atleast_1d(np.asarray(x_query, dtype=float))
@@ -91,7 +91,7 @@ class Centreline:
         d2 = (dx * dx) + (dy * dy)
         nearest = np.argmin(d2, axis=1)
 
-        # -------- Refining with tangent direction --------
+        # Refining with tangent direction
         
         tx = self.tangent_x[nearest]
         ty = self.tangent_y[nearest]
@@ -118,5 +118,68 @@ class Centreline:
     n_query: np.ndarray | float
     ) -> tuple[np.ndarray, np.ndarray]:
         """
-        
+        Given track coordinates in (s, n), return the cooresponding coordinates in (x, y).
         """
+        sq = np.asarray(s_query, dtype=float) % self.length_m
+        nq = np.asarray(n_query, dtype=float)
+        cx, cy = self.position(sq)
+        tx, ty = self.tangent(sq)
+
+        # Perpenidiculars
+        px = -ty
+        py = tx
+
+        return cx + (nq * px), cy + (nq * py)
+
+    def save(self, path: Path) -> None:
+        """
+        Saves centreline by creating two files:
+        - `<path>.npz` : A compressed binary numpy file containing all the arrays.
+        - `<path>.json` : The metadata for the centreline.
+        """
+        p = Path(path)
+
+        # Ensuring the folder exists first
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        np.savez_compressed(
+            p.with_suffix(".npz"),
+            s=self.s,
+            x=self.x,
+            y=self.y,
+            tangent_x=self.tangent_x,
+            tangent_y=self.tangent_y,
+            kappa=self.kappa
+        )
+
+        meta = {
+            'circuit_name' : self.circuit_name,
+            'length_m' : self.length_m,
+            'n_samples' : int(len(self.s)),
+            'metadata' : self.metadata
+        }
+
+        with open(path.with_suffix(".json"), "w") as f:
+            json.dump(meta, f, indent=2)
+    
+    @classmethod
+    def load(cls, path: Path) -> "Centreline":
+        """
+        Load a Centreline that was saved using `save()`.
+        """
+        p = path(Path)
+        arr = np.load(path.with_suffix(".npz"))
+        with open(path.with_suffix(".json")) as f:
+            meta = json.load(f)
+        
+        return cls(
+            s=arr['s'],
+            x=arr['x'],
+            y=arr['y'],
+            tangent_x=arr['tangent_x'],
+            tangent_y=arr['tangent_y'],
+            kappa=arr['kappa'],
+            length_m=float(meta['length_m']),
+            circuit_name=str(meta['circuit_name']),
+            metadata=meta.get('metadata', {})
+        )

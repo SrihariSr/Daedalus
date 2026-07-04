@@ -76,8 +76,42 @@ class Centreline:
         `n` is how far to the side from the centreline the car is.
         """
 
+        # -------- Finding closest point --------
+
         # Ensuring further computation is done on arrays, not single numbers
         xq = np.atleast_1d(np.asarray(x_query, dtype=float))
         yq = np.atleast_1d(np.asarray(y_query, dtype=float))
 
+        # Difference between point and centreline
+        dx = xq[:, None] - self.x[None, :]
+        dy = yq[:, None] - self.y[None, :]
+
+        # Finding squared distance to get the smallest unsigned distance.
+        # Sum of squares is cheaper to compute than the true distance using square root.
+        d2 = (dx * dx) + (dy * dy)
+        nearest = np.argmin(d2, axis=1)
+
+        # -------- Refining with tangent direction --------
         
+        tx = self.tangent_x[nearest]
+        ty = self.tangent_y[nearest]
+
+        # Vector from nearest point to query point
+        vx = xq - self.x[nearest]
+        vy = yq - self.y[nearest]
+
+        # Calculating dot product
+        # if positive, query has passed the nearest stored point
+        # Negative otherwise
+        dt = (vx * tx) + (vy * ty)
+
+        # The component perpendicular to the tangent
+        n = (-vx * ty) + (vy * tx)
+
+        # Using modulo for the edge case s goes past the length of the track
+        s_refined = (self.s[nearest] + dt) % self.length_m
+
+        return s_refined, n
+        
+
+

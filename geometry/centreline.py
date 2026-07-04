@@ -28,7 +28,7 @@ class Centreline:
 
     def position(self, s_query: np.ndarray | float) -> tuple[np.ndarray, np.ndarray]:
         """
-        Given s (the distance along the line), return the (x, y) position.
+        Given `s` (the distance along the line), return the (x, y) position.
         """
         s_q = np.asarray(s_query, dtype=float) % self.length_m
         x = np.interp(s_q, self.s, self.x)
@@ -38,7 +38,7 @@ class Centreline:
     
     def tangent(self, s_query: np.ndarray | float) -> tuple[np.ndarray, np.ndarray]:
         """
-        Given s (the distance along the line), return the tangent unit vector at that point.
+        Given `s` (the distance along the line), return the tangent unit vector at that point.
         """
         s_q = np.asarray(s_query, dtype=float) % self.length_m
         tx = np.interp(s_q, self.s, self.tangent_x)
@@ -51,4 +51,33 @@ class Centreline:
         return tx / norm, ty / norm
     
     def heading(self, s_query: np.ndarray | float) -> np.ndarray:
+        """
+        Given `s` (the distance along the line), return the direction the line is heading
+        as an angle in radians.
+        """
+        tx, ty = self.tangent(s_query)
+        return np.arctan2(ty, tx)
+    
+    def curvature(self, s_query: np.ndarray | float) -> np.ndarray:
+        """
+        Given `s` (the distance along the line), return the curvature at that point in 1/metres.
+        """
+        s_q = np.asarray(s_query, dtype=float) % self.length_m
+        
+        return np.interp(s_q, self.s, self.kappa)
+
+    def convert_xy_to_sn(self,
+    x_query: np.ndarray | float,
+    y_query: np.ndarray | float,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Given a car's position as (x, y), return (s, n) where:
+        `s` is how far along the centreline the car is.
+        `n` is how far to the side from the centreline the car is.
+        """
+
+        # Ensuring further computation is done on arrays, not single numbers
+        xq = np.atleast_1d(np.asarray(x_query, dtype=float))
+        yq = np.atleast_1d(np.asarray(y_query, dtype=float))
+
         

@@ -112,6 +112,11 @@ class Centreline:
         s_refined = (self.s[nearest] + dt) % self.length_m
 
         return s_refined, n
+
+    def convert_sn_to_xy(self,
+    s_query: np.ndarray | float,
+    n_query: np.ndarray | float
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
         
-
-
+        """

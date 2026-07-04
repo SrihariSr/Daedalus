@@ -1,6 +1,6 @@
 # Daedalus
 
-A physics-informed differentiable vehicle-dynamics model for Formula 1.
+A physics-informed vehicle-dynamics model for Formula 1.
 
 ## Overview
 

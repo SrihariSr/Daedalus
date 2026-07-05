@@ -43,7 +43,7 @@ class Centreline:
         s_q = np.asarray(s_query, dtype=float) % self.length_m
         tx = np.interp(s_q, self.s, self.tangent_x)
         ty = np.interp(s_q, self.s, self.tangent_y)
-        norm = np.sqrt((tx * tx) + (ty * ty))
+        norm = np.sqrt((tx**2) + (ty**2))
 
         # Defensive measure in case norm = 0 (should not happen but to absolutely be safe)
         norm = np.where(norm > 0, norm, 1.0) 
@@ -88,7 +88,7 @@ class Centreline:
 
         # Finding squared distance to get the smallest unsigned distance.
         # Sum of squares is cheaper to compute than the true distance using square root.
-        d2 = (dx * dx) + (dy * dy)
+        d2 = (dx**2) + (dy**2)
         nearest = np.argmin(d2, axis=1)
 
         # Refining with tangent direction
@@ -183,3 +183,36 @@ class Centreline:
             circuit_name=str(meta['circuit_name']),
             metadata=meta.get('metadata', {})
         )
+
+# Helper functions
+
+def _resample_to_uniform_arc_length(
+    x: np.ndarray,
+    y: np.ndarray,
+    n_samples: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Takes a lap's (x, y) points and returns a list of equally spaced points by distance.
+    """
+    dx = np.diff(x)
+    dy = np.diff(y)
+
+    displacement = np.sqrt(dx**2 + dy**2)
+
+    s_in = np.concatenate([0.0], np.cumsum(displacement))
+    length = s_in[-1]
+
+    s_new = np.linspace(0.0, length, n_samples)
+
+    x_new = np.interp(s_new, s_in, x)
+    y_new = np.interp(s_new, s_in, y)
+
+    return s_new, x_new, y_new
+
+def _fit_periodic_spline_and_parameterise(
+    x_mean: np.ndarray,
+    y_mean: np.ndarray,
+    n_samples: int,
+    spline_smoothness: float
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
+    
